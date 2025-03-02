@@ -9,7 +9,7 @@ export const placeObjectAboveGround = (
   gameObject.mesh.position.set(0, objectHeight / 2, -8);
 };
 
-export const createMap = () => {
+export const createMap = (): THREE.Group => {
   // --- Three.js Scene Setup ---
   // Ambient light
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -23,6 +23,7 @@ export const createMap = () => {
   const ground = new GameObject({
     geometry: groundGeometry,
     material: groundMaterial,
+    isCollidable: true,
   });
 
   // const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -38,9 +39,10 @@ export const createMap = () => {
     instructions: [
       (gameObject: GameObject) => placeObjectAboveGround(gameObject, 1),
     ],
+    isCollidable: true,
   });
 
-  const map = new THREE.Object3D();
+  const map = new THREE.Group();
   map.add(ambientLight, ground.mesh, ...walls, target.mesh);
 
   return map;
