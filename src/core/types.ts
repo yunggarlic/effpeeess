@@ -13,13 +13,26 @@ export interface Bullet extends GameObject {
   distanceTraveled: number;
 }
 
-export interface GameConfiguration {
+const GameConfigDefault = {
+  bulletSpeed: 20,
+  bulletMaxDistance: 50,
+  moveSpeed: 10,
+};
+
+export class GameConfiguration {
   bulletSpeed: number;
   bulletMaxDistance: number;
   moveSpeed: number;
+  constructor(config: GameConfiguration = GameConfigDefault) {
+    this.bulletSpeed = config.bulletSpeed ?? GameConfigDefault.bulletSpeed;
+    this.bulletMaxDistance =
+      config.bulletMaxDistance ?? GameConfigDefault.bulletMaxDistance;
+    this.moveSpeed = config.moveSpeed ?? GameConfigDefault.moveSpeed;
+  }
 }
 export enum GameObjectTypes {
   Player = "Player",
   Bullet = "Bullet",
   Collidable = "Collidable",
+  DummyTarget = "DummyTarget",
 }

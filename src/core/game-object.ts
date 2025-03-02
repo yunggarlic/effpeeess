@@ -14,7 +14,13 @@ export class GameObject {
   mesh: THREE.Mesh;
   isCollidable: boolean;
   type: string | null;
-  constructor({ geometry, material, instructions, isCollidable = false, type = null }: GameObjectProps<any>) {
+  constructor({
+    geometry,
+    material,
+    instructions,
+    isCollidable = false,
+    type = null,
+  }: GameObjectProps<any>) {
     this.mesh = new THREE.Mesh(geometry, material);
     this.isCollidable = isCollidable;
     this.type = type;
@@ -25,23 +31,27 @@ export class GameObject {
     gameState.objectManager.add(this);
   }
 
+  addToScene() {
+    gameState.scene.add(this.mesh);
+  }
+
   destroy() {
     gameState.objectManager.remove(this);
-    gameState.scene.remove(this.mesh);
+    this.mesh.removeFromParent();
   }
 }
 
-
 export class Collidable extends GameObject {
-  constructor({ geometry, material, instructions, type = GameObjectTypes.Collidable }: GameObjectProps<any>) {
-    super({ geometry, material, instructions, isCollidable: true, type, });
+  constructor({
+    geometry,
+    material,
+    instructions,
+    type = GameObjectTypes.Collidable,
+  }: GameObjectProps<any>) {
+    super({ geometry, material, instructions, isCollidable: true, type });
   }
 
   hit() {
     console.error(`hit() method not implemented for ${this.constructor.name}`);
-  }
-
-  create() {
-    console.error(`create() method not implemented for ${this.constructor.name}`);
   }
 }

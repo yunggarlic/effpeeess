@@ -51,7 +51,7 @@ export class Player extends Collidable {
     this.setGunMeshId(gunMesh.id);
 
     this.mesh.add(gunMesh);
-    return gunMesh
+    return gunMesh;
   }
 
   updatePosition(x: number, y: number, z: number): THREE.Vector3 {
@@ -73,9 +73,11 @@ export class Player extends Collidable {
     // Determine the forward direction from the player's world position;
     return new Bullet(
       getBulletProps(),
-      this.getWorldDirection().multiplyScalar(gameState.configuration.bulletSpeed),
+      this.getWorldDirection().multiplyScalar(
+        gameState.configuration.bulletSpeed
+      ),
       gunMesh.getWorldPosition(new THREE.Vector3())
-    )
+    );
   }
 
   getGunMesh() {
@@ -91,8 +93,8 @@ export class LocalPlayer extends Player {
     this.camera = new THREE.PerspectiveCamera(...cameraSettings.getShit());
     this.camera?.position.set(0, 2, 5);
     this.controls = new PointerLockControls(this.camera, document.body);
-    this.addGunMesh()
-    this.setupListeners()
+    this.addGunMesh();
+    this.setupListeners();
   }
 
   addGunMesh(): THREE.Mesh | void {
@@ -103,7 +105,7 @@ export class LocalPlayer extends Player {
       gunMesh.position.set(0.4, -0.3, -1);
       this.setGunMeshId(gunMesh.id);
       this.controls.object.add(gunMesh);
-      return gunMesh
+      return gunMesh;
     }
   }
 
@@ -112,7 +114,6 @@ export class LocalPlayer extends Player {
   }
 
   getGunMesh() {
-    console.log(this.controls.object.getObjectById(this.gunMeshId))
     return this.controls.object.getObjectById(this.gunMeshId);
   }
   getWorldDirection() {

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { gameState } from "../core/state";
-import { GameObject } from "@core/game-object";
+import { Collidable, GameObject } from "@core/game-object";
+import { DummyTarget } from "./target-dummy";
 
 export const placeObjectAboveGround = (
   gameObject: GameObject,
@@ -20,26 +20,24 @@ export const createMap = (): THREE.Group => {
     color: 0x00ff00,
     side: THREE.DoubleSide,
   });
-  const ground = new GameObject({
+  const ground = new Collidable({
     geometry: groundGeometry,
     material: groundMaterial,
-    isCollidable: true,
+    instructions: [
+      (gameObject: GameObject) => (gameObject.mesh.rotation.x = -Math.PI / 2),
+    ],
   });
-
-  // const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.mesh.rotation.x = -Math.PI / 2;
 
   // --- Walls ---
   const walls: THREE.Mesh[] = [];
   createWalls(walls);
 
-  const target = new GameObject({
+  const target = new DummyTarget({
     geometry: new THREE.BoxGeometry(1, 1, 1),
     material: new THREE.MeshBasicMaterial({ color: 0x0000ff }),
     instructions: [
       (gameObject: GameObject) => placeObjectAboveGround(gameObject, 1),
     ],
-    isCollidable: true,
   });
 
   const map = new THREE.Group();
@@ -51,30 +49,48 @@ export const createMap = (): THREE.Group => {
 const createWalls = (walls: any) => {
   // Front wall
   const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
-  const wallFrontGeometry = new THREE.BoxGeometry(10, 3, 0.5);
-  const wallFront = new THREE.Mesh(wallFrontGeometry, wallMaterial);
-  wallFront.position.set(0, 1.5, -10);
-  gameState.scene.add(wallFront);
-  walls.push(wallFront);
+
+  const shortSideWallGeometry = new THREE.BoxGeometry(10, 3, 0.5);
+
+  const wallFront = new Collidable({
+    geometry: shortSideWallGeometry,
+    material: wallMaterial,
+    instructions: [
+      (gameObject: GameObject) => gameObject.mesh.position.set(0, 1.5, -10),
+    ],
+  });
+
+  walls.push(wallFront.mesh);
 
   // Back wall
-  const wallBackGeometry = new THREE.BoxGeometry(10, 3, 0.5);
-  const wallBack = new THREE.Mesh(wallBackGeometry, wallMaterial);
-  wallBack.position.set(0, 1.5, 10);
-  gameState.scene.add(wallBack);
-  walls.push(wallBack);
+  const wallBack = new Collidable({
+    geometry: shortSideWallGeometry,
+    material: wallMaterial,
+    instructions: [
+      (gameObject: GameObject) => gameObject.mesh.position.set(0, 1.5, 10),
+    ],
+  });
+  walls.push(wallBack.mesh);
 
   // Left wall
-  const wallLeftGeometry = new THREE.BoxGeometry(0.5, 3, 20);
-  const wallLeft = new THREE.Mesh(wallLeftGeometry, wallMaterial);
-  wallLeft.position.set(-5, 1.5, 0);
-  gameState.scene.add(wallLeft);
-  walls.push(wallLeft);
+  const longSideWallGeometry = new THREE.BoxGeometry(0.5, 3, 20);
+  const wallLeft = new Collidable({
+    geometry: longSideWallGeometry,
+    material: wallMaterial,
+    instructions: [
+      (gameObject: GameObject) => gameObject.mesh.position.set(-5, 1.5, 0),
+    ],
+  });
+
+  walls.push(wallLeft.mesh);
 
   // Right wall
-  const wallRightGeometry = new THREE.BoxGeometry(0.5, 3, 20);
-  const wallRight = new THREE.Mesh(wallRightGeometry, wallMaterial);
-  wallRight.position.set(5, 1.5, 0);
-  gameState.scene.add(wallRight);
-  walls.push(wallRight);
+  const wallRight = new Collidable({
+    geometry: longSideWallGeometry,
+    material: wallMaterial,
+    instructions: [
+      (gameObject: GameObject) => gameObject.mesh.position.set(5, 1.5, 0),
+    ],
+  });
+  walls.push(wallRight.mesh);
 };
