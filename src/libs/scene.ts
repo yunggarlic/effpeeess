@@ -1,20 +1,22 @@
 import * as THREE from "three";
 import { GameObject } from "@core/game-object";
+import { LocalPlayer } from "./player";
 
 export const buildScene = (
   scene: THREE.Scene,
-  gameObjects: (THREE.Mesh | THREE.Object3D)[]
+  map: THREE.Group,
+  player: LocalPlayer
 ) => {
-  gameObjects.forEach((gameObject) => {
-    scene.add(gameObject);
-  });
+  map.add(player.mesh);
+  map.add(player.controls.object);
+
+  // load lobby players
+  // addPlayersToScene(map, gameState.lobbyPlayers);
+  scene.add(map);
 };
 
-export const addPlayersToScene = (
-  scene: THREE.Scene,
-  players: GameObject[]
-) => {
+export const addPlayersToScene = (map: THREE.Group, players: GameObject[]) => {
   players.forEach((player) => {
-    scene.add(player.mesh);
+    map.add(player.mesh);
   });
 };

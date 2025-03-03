@@ -7,6 +7,7 @@ import {
 } from "@types";
 import { Player } from "@libs/player";
 import { emit } from "./emit";
+import io from "socket.io-client";
 
 const handleUpdatePlayer = (
   playerData: UpdatePlayerDataDto,
@@ -41,11 +42,11 @@ const handleRemovePlayer = (
 };
 
 export const setupSocketListeners = ({
-  socket,
   scene,
   otherPlayers,
-  player,
+  localPlayer,
 }: SetupSocketListenersDto) => {
+  const socket = io();
   socket.on("updatePlayer", (playerData: UpdatePlayerDataDto) =>
     handleUpdatePlayer(playerData, scene, otherPlayers)
   );
@@ -54,9 +55,9 @@ export const setupSocketListeners = ({
   );
 
   setInterval(() => {
-    const pos = player.mesh.position;
+    const pos = localPlayer.mesh.position;
     emit(socket, "updatePlayer", {
-      id: player.id,
+      id: localPlayer.id,
       x: pos.x,
       y: pos.y,
       z: pos.z,

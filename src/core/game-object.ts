@@ -2,7 +2,29 @@ import { GameObjectTypes } from "@types";
 import * as THREE from "three";
 import { gameState } from "./state";
 
-export interface GameObjectProps<G extends THREE.BufferGeometry> {
+type ParameterizedBufferGeometry =
+  | THREE.BoxGeometry
+  | THREE.CapsuleGeometry
+  | THREE.CircleGeometry
+  | THREE.ConeGeometry
+  | THREE.CylinderGeometry
+  | THREE.DodecahedronGeometry
+  | THREE.ExtrudeGeometry
+  | THREE.IcosahedronGeometry
+  | THREE.LatheGeometry
+  | THREE.OctahedronGeometry
+  | THREE.PlaneGeometry
+  | THREE.PolyhedronGeometry
+  | THREE.RingGeometry
+  | THREE.ShapeGeometry
+  | THREE.SphereGeometry
+  | THREE.TetrahedronGeometry
+  | THREE.TorusGeometry
+  | THREE.TorusKnotGeometry
+  | THREE.TubeGeometry;
+
+// 2) Use that union to ensure geometry.parameters is recognized
+export interface GameObjectProps<G extends ParameterizedBufferGeometry> {
   geometry: G;
   material: THREE.Material;
   instructions?: Function[];

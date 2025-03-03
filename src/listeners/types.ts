@@ -1,7 +1,6 @@
-import { Socket } from "socket.io-client";
 import * as THREE from "three";
 import { OtherPlayers } from "@types";
-import { Player } from "@libs/player";
+import { LocalPlayer, Player } from "@libs/player";
 
 export interface SocketEvents {
   updatePlayer: UpdatePlayerDataDto;
@@ -13,10 +12,9 @@ export interface SocketEmitEvents {
 }
 
 export interface SetupSocketListenersDto {
-  socket: Socket;
   scene: THREE.Scene;
   otherPlayers: OtherPlayers;
-  player: Player;
+  localPlayer: LocalPlayer;
 }
 
 export interface UpdatePlayerDataDto extends Pick<Player, "id"> {

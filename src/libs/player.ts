@@ -88,6 +88,10 @@ export class Player extends Collidable {
 export class LocalPlayer extends Player {
   controls: PointerLockControls;
   camera: THREE.PerspectiveCamera;
+
+  private velocityY = 0;
+  private onGround = true;
+
   constructor({ id, mesh }: PlayerProps) {
     super({ id, mesh });
     this.camera = new THREE.PerspectiveCamera(...cameraSettings.getShit());
@@ -126,6 +130,53 @@ export class LocalPlayer extends Player {
         this.shoot();
       }
     });
+  }
+  move(deltaTime: number) {
+    if (!this.controls.isLocked) return;
+
+    const direction = new THREE.Vector3();
+    const moveSpeed = gameState.configuration.moveSpeed;
+
+    // Horizontal movement
+    if (gameState.keysPressed["w"]) direction.z += moveSpeed;
+    if (gameState.keysPressed["s"]) direction.z -= moveSpeed;
+    if (gameState.keysPressed["a"]) direction.x -= moveSpeed;
+    if (gameState.keysPressed["d"]) direction.x += moveSpeed;
+
+    // Jump if space bar pressed & on ground
+    if (gameState.keysPressed[" "] && this.onGround) {
+      this.velocityY = gameState.configuration.jumpForce;
+      this.onGround = false;
+    }
+
+    // Move horizontally using PointerLockControls
+    this.controls.moveRight(direction.x * deltaTime);
+    this.controls.moveForward(direction.z * deltaTime);
+
+    // Gravity
+    this.velocityY -= gameState.configuration.gravity * deltaTime;
+
+    // Apply vertical movement and account for ground height if sloped
+    const newY = this.controls.object.position.y + this.velocityY * deltaTime;
+    this.controls.object.position.y = newY;
+
+    // we need to account for the height of the player
+    // is there something on the mesh we can use?
+    // when checking for ground collision
+    const playerHeight = this.mesh.geometry.parameters.height;
+    console.log(this.mesh.geometry)
+
+    this.onGround = newY <= playerHeight ? true : false;
+
+    // Ground collision (assuming ground is at y=0)
+    if (newY <= playerHeight) {
+      this.controls.object.position.y = playerHeight;
+      this.velocityY = 0;
+      this.onGround = true;
+    }
+
+    // Keep the Player mesh synced with the camera
+    this.mesh.position.copy(this.controls.object.position);
   }
 }
 

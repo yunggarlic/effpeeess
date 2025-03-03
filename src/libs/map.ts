@@ -94,3 +94,8 @@ const createWalls = (walls: any) => {
   });
   walls.push(wallRight.mesh);
 };
+
+const defaultMap = createMap();
+const maps = [defaultMap];
+
+export const getMap = (mapIndex: number): THREE.Group => maps[mapIndex];
