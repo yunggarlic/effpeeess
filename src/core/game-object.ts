@@ -2,7 +2,7 @@ import { GameObjectTypes } from "@types";
 import * as THREE from "three";
 import { gameState } from "./state";
 
-type ParameterizedBufferGeometry =
+export type ParameterizedBufferGeometry =
   | THREE.BoxGeometry
   | THREE.CapsuleGeometry
   | THREE.CircleGeometry

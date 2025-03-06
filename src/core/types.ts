@@ -42,4 +42,6 @@ export enum GameObjectTypes {
   Bullet = "Bullet",
   Collidable = "Collidable",
   DummyTarget = "DummyTarget",
+  Ground = "Ground",
+  Wall = "Wall"
 }

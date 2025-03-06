@@ -2,16 +2,44 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { cameraSettings } from "../core/constants";
 import { v4 as uuidv4 } from "uuid";
-import { Collidable } from "@core/game-object";
+import { Collidable, ParameterizedBufferGeometry } from "@core/game-object";
 import { gameState } from "@core/state";
 import { Bullet, getBulletProps } from "./bullets";
 import { GameObjectTypes } from "@types";
+
+/**
+ * Computes an approximate collision normal based on the closest face of the box.
+ * Compares the intersection point with the box's min and max on the X and Z axes.
+ * @param box - The bounding box of the collidable.
+ * @param point - The intersection point.
+ * @returns A normalized vector representing the collision normal.
+ */
+function computeBoxFaceNormal(box: THREE.Box3, point: THREE.Vector3): THREE.Vector3 {
+  let bestNormal = new THREE.Vector3();
+  let minDistance = Infinity;
+
+  // Create an array of face data: each face has a normal and the distance from the point to that face.
+  const faces = [
+    { normal: new THREE.Vector3(-1, 0, 0), distance: Math.abs(point.x - box.min.x) },
+    { normal: new THREE.Vector3(1, 0, 0), distance: Math.abs(box.max.x - point.x) },
+    { normal: new THREE.Vector3(0, 0, -1), distance: Math.abs(point.z - box.min.z) },
+    { normal: new THREE.Vector3(0, 0, 1), distance: Math.abs(box.max.z - point.z) },
+  ];
+
+  for (const face of faces) {
+    if (face.distance < minDistance) {
+      minDistance = face.distance;
+      bestNormal.copy(face.normal);
+    }
+  }
+  return bestNormal;
+}
 
 interface PlayerProps {
   id: string;
   mesh: THREE.Mesh;
   isOtherPlayer?: boolean;
-  geometry?: THREE.BoxGeometry;
+  geometry?: ParameterizedBufferGeometry;
   material?: THREE.MeshBasicMaterial;
   gunMeshId?: string;
 }
@@ -131,51 +159,143 @@ export class LocalPlayer extends Player {
       }
     });
   }
+  /**
+   * Moves the player with swept collision detection to allow sliding along walls.
+   * Uses iterative collision resolution and multiple ray origins for better detection.
+   */
   move(deltaTime: number) {
     if (!this.controls.isLocked) return;
 
-    const direction = new THREE.Vector3();
     const moveSpeed = gameState.configuration.moveSpeed;
 
-    // Horizontal movement
-    if (gameState.keysPressed["w"]) direction.z += moveSpeed;
-    if (gameState.keysPressed["s"]) direction.z -= moveSpeed;
-    if (gameState.keysPressed["a"]) direction.x -= moveSpeed;
-    if (gameState.keysPressed["d"]) direction.x += moveSpeed;
+    // --- Compute Camera-Relative Horizontal Movement ---
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
 
-    // Jump if space bar pressed & on ground
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    let moveForward = 0;
+    let moveRight = 0;
+    if (gameState.keysPressed["w"]) moveForward += 1;
+    if (gameState.keysPressed["s"]) moveForward -= 1;
+    if (gameState.keysPressed["d"]) moveRight += 1;
+    if (gameState.keysPressed["a"]) moveRight -= 1;
+
+    // Build the full horizontal movement vector.
+    const movement3D = new THREE.Vector3();
+    movement3D.add(forward.clone().multiplyScalar(moveForward));
+    movement3D.add(right.clone().multiplyScalar(moveRight));
+    if (movement3D.lengthSq() > 0) movement3D.normalize();
+    movement3D.multiplyScalar(moveSpeed * deltaTime);
+
+    // --- Handle Vertical Movement (Jump/Gravity) ---
     if (gameState.keysPressed[" "] && this.onGround) {
       this.velocityY = gameState.configuration.jumpForce;
       this.onGround = false;
     }
-
-    // Move horizontally using PointerLockControls
-    this.controls.moveRight(direction.x * deltaTime);
-    this.controls.moveForward(direction.z * deltaTime);
-
-    // Gravity
     this.velocityY -= gameState.configuration.gravity * deltaTime;
 
-    // Apply vertical movement and account for ground height if sloped
-    const newY = this.controls.object.position.y + this.velocityY * deltaTime;
-    this.controls.object.position.y = newY;
+    // --- Iterative Swept Collision Detection for Horizontal Movement ---
+    const skinOffset = 0.05;
+    const maxIterations = 3;
+    let currentPosition = this.controls.object.position.clone();
+    let remainingMovement = movement3D.clone();
 
-    // we need to account for the height of the player
-    // is there something on the mesh we can use?
-    // when checking for ground collision
-    const playerHeight = this.mesh.geometry.parameters.height;
+    for (
+      let i = 0;
+      i < maxIterations && remainingMovement.lengthSq() > 0.0001;
+      i++
+    ) {
+      const collision = this.raycastCollision(
+        currentPosition,
+        remainingMovement
+      );
+      if (collision) {
+        // Move up to just before the collision.
+        const allowedDistance = Math.max(collision.distance - skinOffset, 0);
+        const allowedMovement = remainingMovement
+          .clone()
+          .normalize()
+          .multiplyScalar(allowedDistance);
+        currentPosition.add(allowedMovement);
 
-    this.onGround = newY <= playerHeight ? true : false;
+        // Calculate leftover movement and slide it along the collision plane.
+        remainingMovement.sub(allowedMovement);
+        remainingMovement = remainingMovement.projectOnPlane(collision.normal);
+      } else {
+        // No collision: move the entire remaining distance.
+        currentPosition.add(remainingMovement);
+        remainingMovement.set(0, 0, 0);
+      }
+    }
 
-    // Ground collision (assuming ground is at y=0)
-    if (newY <= playerHeight) {
-      this.controls.object.position.y = playerHeight;
+    // --- Apply Vertical (Y) Movement ---
+    let newY = this.controls.object.position.y + this.velocityY * deltaTime;
+    if (newY < 1.0) {
+      // Clamp to floor height (adjust as needed)
+      newY = 1.0;
       this.velocityY = 0;
       this.onGround = true;
     }
+    currentPosition.y = newY;
 
-    // Keep the Player mesh synced with the camera
+    // Update positions
+    this.controls.object.position.copy(currentPosition);
     this.mesh.position.copy(this.controls.object.position);
+  }
+
+  /**
+   * Casts multiple rays from various offsets around the player’s position along the movement direction.
+   * Returns collision data if any of the rays detect a collision within the movement length.
+   */
+  raycastCollision(
+    start: THREE.Vector3,
+    movement: THREE.Vector3
+  ): { distance: number; normal: THREE.Vector3 } | null {
+    // Define offsets from the player's center.
+    // Adjust `playerRadius` according to your player's dimensions.
+    const playerRadius = 0.5;
+    const offsets = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(playerRadius, 0, 0),
+      new THREE.Vector3(-playerRadius, 0, 0),
+      new THREE.Vector3(0, 0, playerRadius),
+      new THREE.Vector3(0, 0, -playerRadius),
+    ];
+
+    let closestCollision: { distance: number; normal: THREE.Vector3 } | null =
+      null;
+    const movementLength = movement.length();
+
+    for (const offset of offsets) {
+      const rayOrigin = start.clone().add(offset);
+      const ray = new THREE.Ray(rayOrigin, movement.clone().normalize());
+
+      for (const collidableId of gameState.objectManager.collidables) {
+        const collidable =
+          gameState.objectManager.getGameObjectById(collidableId);
+        if (!collidable || collidable.mesh.id === this.mesh.id) continue;
+        // Skip ground objects.
+        if (collidable.type === "Ground") continue;
+
+        const box = new THREE.Box3().setFromObject(collidable.mesh);
+        const intersectionPoint = new THREE.Vector3();
+        if (ray.intersectBox(box, intersectionPoint)) {
+          const distance = rayOrigin.distanceTo(intersectionPoint);
+          if (distance <= movementLength) {
+            // Compute the collision normal by determining which face of the box was hit.
+            const normal = computeBoxFaceNormal(box, intersectionPoint);
+            if (!closestCollision || distance < closestCollision.distance) {
+              closestCollision = { distance, normal };
+            }
+          }
+        }
+      }
+    }
+    return closestCollision;
   }
 }
 

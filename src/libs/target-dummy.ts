@@ -31,13 +31,19 @@ export class DummyTarget extends Collidable {
       console.warn("Hit detected on an object not in the scene!");
       return; // Ignore hits on objects not in the scene
     }
-  
-    console.log("Target dummy hit", this.dummyType);
-  
-    this.mesh.material.color.set(0xff0000);
+
+    if (!Array.isArray(this.mesh.material)) {
+      const mat = this.mesh.material;
+      if (mat instanceof THREE.MeshBasicMaterial) {
+        mat.color.set(0xff0000);
+      }
+    } else {
+      console.error(
+        "NotImplementedError: Target dummy hit not implemented for multiple or non-basic materials"
+      );
+    }
     this.initiateRespawn();
   }
-  
 
   initiateRespawn() {
     setTimeout(() => {

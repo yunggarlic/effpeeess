@@ -12,6 +12,7 @@ export class ObjectManager {
     this.bullets = [];
     this.uncategorized = [];
     this.players = [];
+
     this.all = new Map<number, GameObject>();
   }
 
@@ -19,6 +20,7 @@ export class ObjectManager {
     switch (object.type) {
       case GameObjectTypes.Player:
         this.players.push(object.mesh.id);
+      case GameObjectTypes.Wall:
       case GameObjectTypes.Collidable:
         this.collidables.push(object.mesh.id);
         break;
@@ -85,8 +87,6 @@ export class ObjectManager {
         );
     }
     this.all.delete(object.mesh.id);
-    console.log('collidables -->', this.collidables);
-    console.log(`Removed object ${object.mesh.id} - ${object.type}`);
   }
   removeMany(objects: GameObject[]) {
     objects.forEach((object) => this.remove(object));
