@@ -14,16 +14,31 @@ import { GameObjectTypes } from "@types";
  * @param point - The intersection point.
  * @returns A normalized vector representing the collision normal.
  */
-function computeBoxFaceNormal(box: THREE.Box3, point: THREE.Vector3): THREE.Vector3 {
+function computeBoxFaceNormal(
+  box: THREE.Box3,
+  point: THREE.Vector3
+): THREE.Vector3 {
   let bestNormal = new THREE.Vector3();
   let minDistance = Infinity;
 
   // Create an array of face data: each face has a normal and the distance from the point to that face.
   const faces = [
-    { normal: new THREE.Vector3(-1, 0, 0), distance: Math.abs(point.x - box.min.x) },
-    { normal: new THREE.Vector3(1, 0, 0), distance: Math.abs(box.max.x - point.x) },
-    { normal: new THREE.Vector3(0, 0, -1), distance: Math.abs(point.z - box.min.z) },
-    { normal: new THREE.Vector3(0, 0, 1), distance: Math.abs(box.max.z - point.z) },
+    {
+      normal: new THREE.Vector3(-1, 0, 0),
+      distance: Math.abs(point.x - box.min.x),
+    },
+    {
+      normal: new THREE.Vector3(1, 0, 0),
+      distance: Math.abs(box.max.x - point.x),
+    },
+    {
+      normal: new THREE.Vector3(0, 0, -1),
+      distance: Math.abs(point.z - box.min.z),
+    },
+    {
+      normal: new THREE.Vector3(0, 0, 1),
+      distance: Math.abs(box.max.z - point.z),
+    },
   ];
 
   for (const face of faces) {
@@ -159,9 +174,10 @@ export class LocalPlayer extends Player {
       }
     });
   }
+
   /**
-   * Moves the player with swept collision detection to allow sliding along walls.
-   * Uses iterative collision resolution and multiple ray origins for better detection.
+   * Moves the player with swept collision detection to allow sliding along walls
+   * and uses multiple vertical rays for a more forgiving edge and surface detection.
    */
   move(deltaTime: number) {
     if (!this.controls.isLocked) return;
@@ -198,7 +214,7 @@ export class LocalPlayer extends Player {
     }
     this.velocityY -= gameState.configuration.gravity * deltaTime;
 
-    // --- Iterative Swept Collision Detection for Horizontal Movement ---
+    // --- Horizontal Collision Resolution (Iterative Swept Collision) ---
     const skinOffset = 0.05;
     const maxIterations = 3;
     let currentPosition = this.controls.object.position.clone();
@@ -214,7 +230,6 @@ export class LocalPlayer extends Player {
         remainingMovement
       );
       if (collision) {
-        // Move up to just before the collision.
         const allowedDistance = Math.max(collision.distance - skinOffset, 0);
         const allowedMovement = remainingMovement
           .clone()
@@ -222,30 +237,114 @@ export class LocalPlayer extends Player {
           .multiplyScalar(allowedDistance);
         currentPosition.add(allowedMovement);
 
-        // Calculate leftover movement and slide it along the collision plane.
         remainingMovement.sub(allowedMovement);
         remainingMovement = remainingMovement.projectOnPlane(collision.normal);
       } else {
-        // No collision: move the entire remaining distance.
         currentPosition.add(remainingMovement);
         remainingMovement.set(0, 0, 0);
       }
     }
 
-    // --- Apply Vertical (Y) Movement ---
-    let newY = this.controls.object.position.y + this.velocityY * deltaTime;
-    if (newY < 1.0) {
-      // Clamp to floor height (adjust as needed)
-      newY = 1.0;
+    // --- Vertical Collision Resolution ---
+    // Define the player's half-height and the ground level (player center when standing).
+    const halfHeight = 1.0;
+    const groundLevel = 1.05; // Adjust this based on your ground mesh's height.
+
+    let proposedY =
+      this.controls.object.position.y + this.velocityY * deltaTime;
+    if (this.velocityY !== 0) {
+      const directionY = Math.sign(this.velocityY);
+      const verticalMovement = Math.abs(this.velocityY * deltaTime);
+      const collisionCandidateY = this.castVerticalRays(
+        currentPosition,
+        directionY,
+        verticalMovement,
+        halfHeight
+      );
+
+      if (collisionCandidateY !== null) {
+        proposedY = collisionCandidateY;
+        this.velocityY = 0;
+        if (directionY < 0) {
+          this.onGround = true;
+        }
+      }
+    }
+
+    // --- Fallback: Prevent Falling Through the Ground ---
+    if (this.velocityY <= 0 && proposedY < groundLevel) {
+      proposedY = groundLevel;
       this.velocityY = 0;
       this.onGround = true;
     }
-    currentPosition.y = newY;
 
-    // Update positions
+    currentPosition.y = proposedY;
     this.controls.object.position.copy(currentPosition);
     this.mesh.position.copy(this.controls.object.position);
   }
+
+    /**
+ * Casts multiple vertical rays from around the player's horizontal position to detect collisions.
+ * For downward movement, returns the highest candidate Y value (i.e. the highest surface contacted).
+ * For upward movement, returns the lowest candidate Y value (i.e. the lowest ceiling).
+ *
+ * @param position - The player's horizontal position after horizontal collision resolution.
+ * @param direction - The vertical direction: -1 for falling, +1 for rising.
+ * @param verticalMovement - The expected vertical movement (|velocityY * deltaTime|).
+ * @param halfHeight - Half the height of the player's collision volume.
+ * @returns The candidate Y position if a collision is detected, or null otherwise.
+ */
+castVerticalRays(
+  position: THREE.Vector3,
+  direction: number,
+  verticalMovement: number,
+  halfHeight: number
+): number | null {
+  // Offsets along the horizontal plane. Adjust these if your player's footprint is larger.
+  const offsets = [
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.5, 0, 0),
+    new THREE.Vector3(-0.5, 0, 0),
+    new THREE.Vector3(0, 0, 0.5),
+    new THREE.Vector3(0, 0, -0.5),
+  ];
+
+  let candidateY: number | null = null;
+  for (const offset of offsets) {
+    const rayOrigin = position.clone().add(offset);
+    // For falling, cast from the bottom; for rising, from the top.
+    if (direction < 0) {
+      rayOrigin.y -= halfHeight;
+    } else {
+      rayOrigin.y += halfHeight;
+    }
+    const ray = new THREE.Ray(rayOrigin, new THREE.Vector3(0, direction, 0));
+
+    for (const collidableId of gameState.objectManager.collidables) {
+      const collidable = gameState.objectManager.getGameObjectById(collidableId);
+      if (!collidable || collidable.mesh.id === this.mesh.id) continue;
+      const box = new THREE.Box3().setFromObject(collidable.mesh);
+      const intersectionPoint = new THREE.Vector3();
+      if (ray.intersectBox(box, intersectionPoint)) {
+        const distance = rayOrigin.distanceTo(intersectionPoint);
+        if (distance <= verticalMovement) {
+          // For falling, adjust so that the player's bottom sits on top of the object.
+          // For rising, adjust so that the player's top is just below the object.
+          const adjustedY =
+            direction < 0 ? box.max.y + halfHeight : box.min.y - halfHeight;
+          if (direction < 0) {
+            // For falling, pick the highest surface.
+            candidateY = candidateY === null ? adjustedY : Math.max(candidateY, adjustedY);
+          } else {
+            // For rising, pick the lowest ceiling.
+            candidateY = candidateY === null ? adjustedY : Math.min(candidateY, adjustedY);
+          }
+        }
+      }
+    }
+  }
+  return candidateY;
+}
 
   /**
    * Casts multiple rays from various offsets around the player’s position along the movement direction.
