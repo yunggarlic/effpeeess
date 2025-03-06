@@ -283,68 +283,75 @@ export class LocalPlayer extends Player {
     this.mesh.position.copy(this.controls.object.position);
   }
 
-    /**
- * Casts multiple vertical rays from around the player's horizontal position to detect collisions.
- * For downward movement, returns the highest candidate Y value (i.e. the highest surface contacted).
- * For upward movement, returns the lowest candidate Y value (i.e. the lowest ceiling).
- *
- * @param position - The player's horizontal position after horizontal collision resolution.
- * @param direction - The vertical direction: -1 for falling, +1 for rising.
- * @param verticalMovement - The expected vertical movement (|velocityY * deltaTime|).
- * @param halfHeight - Half the height of the player's collision volume.
- * @returns The candidate Y position if a collision is detected, or null otherwise.
- */
-castVerticalRays(
-  position: THREE.Vector3,
-  direction: number,
-  verticalMovement: number,
-  halfHeight: number
-): number | null {
-  // Offsets along the horizontal plane. Adjust these if your player's footprint is larger.
-  const offsets = [
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0.5, 0, 0),
-    new THREE.Vector3(-0.5, 0, 0),
-    new THREE.Vector3(0, 0, 0.5),
-    new THREE.Vector3(0, 0, -0.5),
-  ];
+  /**
+   * Casts multiple vertical rays from around the player's horizontal position to detect collisions.
+   * For downward movement, returns the highest candidate Y value (i.e. the highest surface contacted).
+   * For upward movement, returns the lowest candidate Y value (i.e. the lowest ceiling).
+   *
+   * @param position - The player's horizontal position after horizontal collision resolution.
+   * @param direction - The vertical direction: -1 for falling, +1 for rising.
+   * @param verticalMovement - The expected vertical movement (|velocityY * deltaTime|).
+   * @param halfHeight - Half the height of the player's collision volume.
+   * @returns The candidate Y position if a collision is detected, or null otherwise.
+   */
+  castVerticalRays(
+    position: THREE.Vector3,
+    direction: number,
+    verticalMovement: number,
+    halfHeight: number
+  ): number | null {
+    // Offsets along the horizontal plane. Adjust these if your player's footprint is larger.
+    const offsets = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.5, 0, 0),
+      new THREE.Vector3(-0.5, 0, 0),
+      new THREE.Vector3(0, 0, 0.5),
+      new THREE.Vector3(0, 0, -0.5),
+    ];
 
-  let candidateY: number | null = null;
-  for (const offset of offsets) {
-    const rayOrigin = position.clone().add(offset);
-    // For falling, cast from the bottom; for rising, from the top.
-    if (direction < 0) {
-      rayOrigin.y -= halfHeight;
-    } else {
-      rayOrigin.y += halfHeight;
-    }
-    const ray = new THREE.Ray(rayOrigin, new THREE.Vector3(0, direction, 0));
+    let candidateY: number | null = null;
+    for (const offset of offsets) {
+      const rayOrigin = position.clone().add(offset);
+      // For falling, cast from the bottom; for rising, from the top.
+      if (direction < 0) {
+        rayOrigin.y -= halfHeight;
+      } else {
+        rayOrigin.y += halfHeight;
+      }
+      const ray = new THREE.Ray(rayOrigin, new THREE.Vector3(0, direction, 0));
 
-    for (const collidableId of gameState.objectManager.collidables) {
-      const collidable = gameState.objectManager.getGameObjectById(collidableId);
-      if (!collidable || collidable.mesh.id === this.mesh.id) continue;
-      const box = new THREE.Box3().setFromObject(collidable.mesh);
-      const intersectionPoint = new THREE.Vector3();
-      if (ray.intersectBox(box, intersectionPoint)) {
-        const distance = rayOrigin.distanceTo(intersectionPoint);
-        if (distance <= verticalMovement) {
-          // For falling, adjust so that the player's bottom sits on top of the object.
-          // For rising, adjust so that the player's top is just below the object.
-          const adjustedY =
-            direction < 0 ? box.max.y + halfHeight : box.min.y - halfHeight;
-          if (direction < 0) {
-            // For falling, pick the highest surface.
-            candidateY = candidateY === null ? adjustedY : Math.max(candidateY, adjustedY);
-          } else {
-            // For rising, pick the lowest ceiling.
-            candidateY = candidateY === null ? adjustedY : Math.min(candidateY, adjustedY);
+      for (const collidableId of gameState.objectManager.collidables) {
+        const collidable =
+          gameState.objectManager.getGameObjectById(collidableId);
+        if (!collidable || collidable.mesh.id === this.mesh.id) continue;
+        const box = new THREE.Box3().setFromObject(collidable.mesh);
+        const intersectionPoint = new THREE.Vector3();
+        if (ray.intersectBox(box, intersectionPoint)) {
+          const distance = rayOrigin.distanceTo(intersectionPoint);
+          if (distance <= verticalMovement) {
+            // For falling, adjust so that the player's bottom sits on top of the object.
+            // For rising, adjust so that the player's top is just below the object.
+            const adjustedY =
+              direction < 0 ? box.max.y + halfHeight : box.min.y - halfHeight;
+            if (direction < 0) {
+              // For falling, pick the highest surface.
+              candidateY =
+                candidateY === null
+                  ? adjustedY
+                  : Math.max(candidateY, adjustedY);
+            } else {
+              // For rising, pick the lowest ceiling.
+              candidateY =
+                candidateY === null
+                  ? adjustedY
+                  : Math.min(candidateY, adjustedY);
+            }
           }
         }
       }
     }
+    return candidateY;
   }
-  return candidateY;
-}
 
   /**
    * Casts multiple rays from various offsets around the player’s position along the movement direction.
@@ -359,10 +366,10 @@ castVerticalRays(
     const playerRadius = 0.5;
     const offsets = [
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(playerRadius, 0, 0),
-      new THREE.Vector3(-playerRadius, 0, 0),
-      new THREE.Vector3(0, 0, playerRadius),
-      new THREE.Vector3(0, 0, -playerRadius),
+      new THREE.Vector3(playerRadius, -playerRadius, 0),
+      new THREE.Vector3(-playerRadius, -playerRadius, 0),
+      new THREE.Vector3(0, -playerRadius, playerRadius),
+      new THREE.Vector3(0, -playerRadius, -playerRadius),
     ];
 
     let closestCollision: { distance: number; normal: THREE.Vector3 } | null =
