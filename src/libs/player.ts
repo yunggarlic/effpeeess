@@ -164,7 +164,6 @@ export class LocalPlayer extends Player {
     // is there something on the mesh we can use?
     // when checking for ground collision
     const playerHeight = this.mesh.geometry.parameters.height;
-    console.log(this.mesh.geometry)
 
     this.onGround = newY <= playerHeight ? true : false;
 
@@ -183,7 +182,7 @@ export class LocalPlayer extends Player {
 export const localPlayer = new LocalPlayer({
   id: uuidv4(),
   mesh: new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 1, 0.5),
+    new THREE.BoxGeometry(0.5, 2, 0.5),
     new THREE.MeshBasicMaterial({ color: 0x0000ff })
   ),
 });

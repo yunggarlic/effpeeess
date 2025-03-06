@@ -34,7 +34,7 @@ export const createMap = (): THREE.Group => {
 
   const target = new DummyTarget({
     geometry: new THREE.BoxGeometry(1, 1, 1),
-    material: new THREE.MeshBasicMaterial({ color: 0x0000ff }),
+    material: new THREE.MeshBasicMaterial({ color: 0x0000ff }).clone(),
     instructions: [
       (gameObject: GameObject) => placeObjectAboveGround(gameObject, 1),
     ],
@@ -95,7 +95,7 @@ const createWalls = (walls: any) => {
   walls.push(wallRight.mesh);
 };
 
-const defaultMap = createMap();
-const maps = [defaultMap];
+// const defaultMap = createMap();
+// const maps = [defaultMap];
 
-export const getMap = (mapIndex: number): THREE.Group => maps[mapIndex];
+// export const getMap = (mapIndex: number): THREE.Group => maps[mapIndex];

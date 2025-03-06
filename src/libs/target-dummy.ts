@@ -1,6 +1,7 @@
 import { Collidable, GameObject } from "@core/game-object";
 import * as THREE from "three";
 import { placeObjectAboveGround } from "./map";
+import { gameState } from "@core/state";
 
 interface DummyTargetProps {
   geometry: THREE.BoxGeometry;
@@ -26,17 +27,26 @@ export class DummyTarget extends Collidable {
   }
 
   hit() {
-    (this.mesh.material as THREE.MeshStandardMaterial).color.set(0xff0000);
+    if (!this.mesh.parent) {
+      console.warn("Hit detected on an object not in the scene!");
+      return; // Ignore hits on objects not in the scene
+    }
+  
+    console.log("Target dummy hit", this.dummyType);
+  
+    this.mesh.material.color.set(0xff0000);
     this.initiateRespawn();
   }
+  
 
   initiateRespawn() {
     setTimeout(() => {
+      this.destroy(); // Ensure old instance is removed before spawning a new one
+
       setTimeout(() => {
         const target = new DummyTarget(getDummyTargetProps(this.dummyType));
         target.addToScene();
       }, 1000);
-      this.destroy();
     }, 1000);
   }
 }

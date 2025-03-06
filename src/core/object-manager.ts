@@ -85,7 +85,8 @@ export class ObjectManager {
         );
     }
     this.all.delete(object.mesh.id);
-    console.log("object removed");
+    console.log('collidables -->', this.collidables);
+    console.log(`Removed object ${object.mesh.id} - ${object.type}`);
   }
   removeMany(objects: GameObject[]) {
     objects.forEach((object) => this.remove(object));
