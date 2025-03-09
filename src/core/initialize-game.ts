@@ -23,10 +23,12 @@ export function initialize() {
   });
 
   // Create the map **only once**
-  const mapGroup = createMap();
-  mapGroup.add(gameState.localPlayer.mesh);
+  const map = createMap();
+  map.gameObjects.push(gameState.localPlayer);
+  map.mapGroup.add(gameState.localPlayer.mesh);
+  map.mapGroup.add(gameState.localPlayer.controls.object);
   
-  buildScene(gameState.scene, mapGroup, gameState.localPlayer); // Use the same map
+  buildScene(gameState.scene, map); // Use the same map
   
   // --- Unified Animation Loop ---
   animate();

@@ -9,6 +9,7 @@ export default defineConfig({
       "@core": path.resolve(__dirname, "src/core"),
       "@libs": path.resolve(__dirname, "src/libs"),
       "@listeners": path.resolve(__dirname, "src/listeners"),
+      "@shared": path.resolve(__dirname, "shared"),
     },
   },
 });

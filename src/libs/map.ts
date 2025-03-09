@@ -3,6 +3,21 @@ import { Collidable, GameObject } from "@core/game-object";
 import { DummyTarget } from "./target-dummy";
 import { GameObjectTypes } from "@types";
 
+interface MapProps {
+  mapGroup: THREE.Group;
+  gameObjects: GameObject[];
+}
+
+
+export class Map {
+  mapGroup: THREE.Group;
+  gameObjects: GameObject[] = [];
+  constructor({ mapGroup, gameObjects }: MapProps) {
+    this.mapGroup = mapGroup;
+    this.gameObjects = gameObjects;
+  }
+}
+
 /**
  * Positions a game object above the ground based on its height.
  * @param gameObject - The game object to position.
@@ -19,8 +34,8 @@ export const placeObjectAboveGround = (
  * Creates walls for the map.
  * @returns An array of THREE.Mesh instances representing the walls.
  */
-const createWalls = (): THREE.Mesh[] => {
-  const walls: THREE.Mesh[] = [];
+const createWalls = (): GameObject[] => {
+  const walls: GameObject[] = [];
   const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
 
   // Front wall
@@ -34,7 +49,7 @@ const createWalls = (): THREE.Mesh[] => {
         gameObject.mesh.position.set(0, 1.5, -10),
     ],
   });
-  walls.push(frontWall.mesh);
+  walls.push(frontWall);
 
   // Back wall
   const backWall = new Collidable({
@@ -46,7 +61,7 @@ const createWalls = (): THREE.Mesh[] => {
         gameObject.mesh.position.set(0, 1.5, 10),
     ],
   });
-  walls.push(backWall.mesh);
+  walls.push(backWall);
 
   // Left wall
   const longSideWallGeometry = new THREE.BoxGeometry(0.5, 3, 20);
@@ -59,7 +74,7 @@ const createWalls = (): THREE.Mesh[] => {
         gameObject.mesh.position.set(-5, 1.5, 0),
     ],
   });
-  walls.push(leftWall.mesh);
+  walls.push(leftWall);
 
   // Right wall
   const rightWall = new Collidable({
@@ -71,7 +86,7 @@ const createWalls = (): THREE.Mesh[] => {
         gameObject.mesh.position.set(5, 1.5, 0),
     ],
   });
-  walls.push(rightWall.mesh);
+  walls.push(rightWall);
 
   return walls;
 };
@@ -80,7 +95,7 @@ const createWalls = (): THREE.Mesh[] => {
  * Creates a simple map with ground, walls, ambient light, and a target.
  * @returns A THREE.Group representing the map.
  */
-export const createMap = (): THREE.Group => {
+export const createMap = (): Map => {
   // Ambient light
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 
@@ -108,10 +123,13 @@ export const createMap = (): THREE.Group => {
     ],
   });
 
-  // Assemble the map
-  const map = new THREE.Group();
-  map.add(ambientLight, ground.mesh, ...walls, target.mesh);
+  const meshes = [ground.mesh, ...walls.map((wall) => wall.mesh), target.mesh];
 
+  // Assemble the map
+  const mapGroup = new THREE.Group();
+  mapGroup.add(ambientLight, ...meshes);
+
+  const map = new Map({ mapGroup, gameObjects: [ground, ...walls, target] });
   return map;
 };
 

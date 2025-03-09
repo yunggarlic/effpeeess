@@ -50,10 +50,11 @@ export class GameObject {
       instructions.forEach((instruction) => instruction(this));
     }
 
-    gameState.objectManager.add(this);
+    // gameState.objectManager.add(this);
   }
 
   addToScene() {
+    gameState.objectManager.add(this);
     gameState.scene.add(this.mesh);
   }
 

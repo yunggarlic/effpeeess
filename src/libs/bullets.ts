@@ -32,6 +32,7 @@ export class Bullet extends Collidable {
     this.distanceTraveled = 0;
     this.mesh.position.copy(originator);
     gameState.scene.add(this.mesh);
+    gameState.objectManager.add(this);
   }
 
   updateDistanceTraveled(delta: number) {

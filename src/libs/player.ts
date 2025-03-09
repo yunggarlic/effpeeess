@@ -52,7 +52,7 @@ function computeBoxFaceNormal(
 
 interface PlayerProps {
   id: string;
-  mesh: THREE.Mesh;
+  mesh?: THREE.Mesh;
   isOtherPlayer?: boolean;
   geometry?: ParameterizedBufferGeometry;
   material?: THREE.MeshBasicMaterial;
@@ -134,6 +134,8 @@ export class LocalPlayer extends Player {
 
   private velocityY = 0;
   private onGround = true;
+  public horizontalVelocity = new THREE.Vector3();
+
 
   constructor({ id, mesh }: PlayerProps) {
     super({ id, mesh });
@@ -206,6 +208,12 @@ export class LocalPlayer extends Player {
     movement3D.add(right.clone().multiplyScalar(moveRight));
     if (movement3D.lengthSq() > 0) movement3D.normalize();
     movement3D.multiplyScalar(moveSpeed * deltaTime);
+
+    // Capture the raw horizontal displacement and compute velocity.
+    const horizontalDisplacement = movement3D.clone(); // already multiplied by moveSpeed * deltaTime
+    const horizontalVelocity = horizontalDisplacement.clone().divideScalar(deltaTime);
+    // horizontalVelocity should have a magnitude roughly equal to moveSpeed if full input is applied.
+    this.horizontalVelocity = horizontalVelocity;
 
     // --- Handle Vertical Movement (Jump/Gravity) ---
     if (gameState.keysPressed[" "] && this.onGround) {

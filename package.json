@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "vite",
+    "start": "npm run build && ts-node -r module-alias/register server.ts",
+    "dev": "npm run build && nodemon --exec ts-node -r module-alias/register server.ts",
     "build": "vite build"
   },
   "keywords": [],
@@ -12,6 +13,7 @@
   "description": "",
   "dependencies": {
     "express": "^4.21.2",
+    "module-alias": "^2.2.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "three": "^0.174.0",
@@ -25,5 +27,16 @@
     "@types/three": "^0.174.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
+  },
+  "_moduleAliases": {
+    "@shared": "shared"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "dist"
+    ],
+    "events": {
+      "restart": "vite build"
+    }
   }
 }

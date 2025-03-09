@@ -18,8 +18,8 @@ export interface SetupSocketListenersDto {
 }
 
 export interface UpdatePlayerDataDto extends Pick<Player, "id"> {
-  x: number;
-  y: number;
-  z: number;
+  position: number[]; // representing x,y,z
+  velocity: number[]; // representing x,y,z
+  lastUpdateTime: number;
 }
-export interface RemovePlayerDataDto extends Pick<Player, "id"> {}
+export interface RemovePlayerDataDto extends Pick<Player, "id"> { }

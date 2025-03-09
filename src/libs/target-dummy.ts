@@ -1,7 +1,6 @@
 import { Collidable, GameObject } from "@core/game-object";
 import * as THREE from "three";
 import { placeObjectAboveGround } from "./map";
-import { gameState } from "@core/state";
 
 interface DummyTargetProps {
   geometry: THREE.BoxGeometry;

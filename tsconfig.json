@@ -7,11 +7,28 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@types": ["src/types/index.ts"],
-      "@core/*": ["src/core/*"],
-      "@libs/*": ["src/libs/*"],
-      "@listeners/*": ["src/listeners/*"],
+      "@types": [
+        "src/types/index.ts"
+      ],
+      "@core/*": [
+        "src/core/*"
+      ],
+      "@libs/*": [
+        "src/libs/*"
+      ],
+      "@listeners/*": [
+        "src/listeners/*"
+      ],
+      "@shared": [
+        "shared/index.ts"
+      ],
     }
   },
-  "include": ["server.ts", "src/**/*.ts"]
+  "include": [
+    "server/*.ts",
+    "server/**/*.ts",
+    "src/**/*.ts",
+    "shared/**/*.ts",
+    "shared/*.ts"
+  ]
 }
