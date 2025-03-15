@@ -57,6 +57,7 @@ interface PlayerProps {
   geometry?: ParameterizedBufferGeometry;
   material?: THREE.MeshBasicMaterial;
   gunMeshId?: string;
+  multiplayerId?: string;
 }
 
 export class Player extends Collidable {
@@ -64,12 +65,14 @@ export class Player extends Collidable {
   mesh: THREE.Mesh;
   isOtherPlayer: boolean = false;
   gunMeshId: number;
+  multiplayerId: string | null;
   constructor({
     id,
     mesh,
     isOtherPlayer = false,
-    geometry = new THREE.BoxGeometry(1, 2, 1),
-    material = new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+    geometry = new THREE.BoxGeometry(1, 3, 1),
+    material = new THREE.MeshBasicMaterial({ color: 0x0000ff }),
+    multiplayerId,
   }: PlayerProps) {
     super({ geometry, material, type: GameObjectTypes.Player });
     this.id = id;
@@ -77,8 +80,9 @@ export class Player extends Collidable {
     this.isOtherPlayer = isOtherPlayer;
     this.gunMeshId = -1;
     this.type = GameObjectTypes.Player;
+    this.multiplayerId = multiplayerId ?? null;
 
-    this.mesh.position.y = 0.5;
+    // this.mesh.position.y = 0.5;
     this.addGunMesh();
   }
 
@@ -103,6 +107,14 @@ export class Player extends Collidable {
 
   getWorldDirection(): THREE.Vector3 {
     return this.mesh.getWorldDirection(new THREE.Vector3());
+  }
+
+  setMultiplayerId(id: string) {
+    this.multiplayerId = id;
+  }
+
+  getMultiplayerId(): string | null {
+    return this.multiplayerId;
   }
 
   shoot(): Bullet | undefined {
@@ -136,14 +148,15 @@ export class LocalPlayer extends Player {
   private onGround = true;
   public horizontalVelocity = new THREE.Vector3();
 
-
   constructor({ id, mesh }: PlayerProps) {
     super({ id, mesh });
     this.camera = new THREE.PerspectiveCamera(...cameraSettings.getShit());
-    this.camera?.position.set(0, 2, 5);
+    this.camera?.position.set(0, 2, 2);
     this.controls = new PointerLockControls(this.camera, document.body);
     this.addGunMesh();
     this.setupListeners();
+
+    this.controls.object.add(this.mesh);
   }
 
   addGunMesh(): THREE.Mesh | void {
@@ -211,7 +224,9 @@ export class LocalPlayer extends Player {
 
     // Capture the raw horizontal displacement and compute velocity.
     const horizontalDisplacement = movement3D.clone(); // already multiplied by moveSpeed * deltaTime
-    const horizontalVelocity = horizontalDisplacement.clone().divideScalar(deltaTime);
+    const horizontalVelocity = horizontalDisplacement
+      .clone()
+      .divideScalar(deltaTime);
     // horizontalVelocity should have a magnitude roughly equal to moveSpeed if full input is applied.
     this.horizontalVelocity = horizontalVelocity;
 
@@ -288,7 +303,6 @@ export class LocalPlayer extends Player {
 
     currentPosition.y = proposedY;
     this.controls.object.position.copy(currentPosition);
-    this.mesh.position.copy(this.controls.object.position);
   }
 
   /**

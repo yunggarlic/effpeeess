@@ -50,25 +50,6 @@ export class AuthoritativeGameState {
     const serverPlayer = this.players[reportedState.id];
     if (!serverPlayer) return;
 
-    // Compute deltaTime since the last update.
-    const deltaTime = (reportedState.timestamp - serverPlayer.lastUpdateTime) / 1000; // seconds
-
-    // Re-simulate the expected position.
-    // This is a simplified simulation that doesn't include collision detection.
-    const expectedPosition = serverPlayer.position.clone().add(
-      serverPlayer.velocity.clone().multiplyScalar(deltaTime)
-    );
-
-    // Check if the reported position is within an acceptable error margin.
-    const error = expectedPosition.distanceTo(reportedState.position);
-    if (error > ALLOWED_POSITION_ERROR) {
-      console.warn(
-        `Player ${reportedState.id} moved too far! Expected: ${expectedPosition.toArray()}, reported: ${reportedState.position.toArray()}`
-      );
-      // Optionally, correct the position:
-      reportedState.position.copy(expectedPosition);
-    }
-
     // Update the player's state.
     serverPlayer.position.copy(reportedState.position);
     serverPlayer.velocity.copy(reportedState.velocity);

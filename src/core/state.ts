@@ -23,6 +23,18 @@ export class GameState {
   setLocalPlayer(localPlayer: LocalPlayer) {
     this.localPlayer = localPlayer;
   }
+
+  addPlayerToLobby(player: Player) {
+    if (player.multiplayerId) {
+      this.otherPlayers[player.multiplayerId] = player;
+    } else {
+      console.error("player does not have a multiplayerId");
+    }
+  }
+
+  getPlayerInLobby(multiplayerId: string) {
+    return this.otherPlayers[multiplayerId];
+  }
 }
 
 export const gameState = new GameState();

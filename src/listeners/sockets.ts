@@ -5,36 +5,26 @@ import {
   SetupSocketListenersDto,
   OtherPlayers,
 } from "@types";
-import { SocketListenerMessages } from "@shared"
+import { SocketListenerMessages } from "@shared";
 import { emit } from "./emit";
 import { Player } from "@libs/player";
 import { io } from "socket.io-client";
 import { gameState } from "@core/state";
 
-const handleUpdatePlayer = (
-  playerData: UpdatePlayerDataDto,
-  scene: THREE.Scene,
-  otherPlayers: OtherPlayers
-) => {
-  console.log('handling update player', playerData)
-  if (!otherPlayers[playerData.id]) {
-    const otherGeometry = new THREE.BoxGeometry(0.5, 1, 0.5);
-    const otherMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const otherMesh = new THREE.Mesh(otherGeometry, otherMaterial);
-    const player = new Player({ id: playerData.id, mesh: otherMesh });
-    scene.add(otherMesh);
-    otherPlayers[playerData.id] = player;
+const handleUpdatePlayer = (playerData: UpdatePlayerDataDto) => {
+  if (playerData.id === gameState.localPlayer?.id) return;
+  const [x, y, z] = playerData.position;
+  const player = gameState.getPlayerInLobby(playerData.id);
+  if (!player) {
+    console.error(`Player not found in lobby`);
+    console.log(playerData);
+    console.log(gameState);
+    return;
   }
-
-  const { position: [x, y, z] } = playerData
-  otherPlayers[playerData.id].updatePosition(x, y, z);
+  player.updatePosition(x, y, z);
 };
 
-const handleRemovePlayer = (
-  data: RemovePlayerDataDto,
-  scene: THREE.Scene,
-  otherPlayers: OtherPlayers
-) => {
+const handleRemovePlayer = (data: RemovePlayerDataDto) => {
   // if (otherPlayers[data.id]) {
   //   const { mesh: player } = otherPlayers[data.id];
   //   scene.remove(player);
@@ -42,51 +32,62 @@ const handleRemovePlayer = (
   // }
 };
 
-const handleInitialize = (data: { multiplayerId: string, players: UpdatePlayerDataDto[] }) => {
+const handleCreatePlayer = (data: { id: string }) => {
+  // console.log("incoming player", data);
+  const newPlayer = new Player({
+    id: data.id,
+    multiplayerId: data.id,
+  });
+  gameState.addPlayerToLobby(newPlayer);
+  newPlayer.addToScene();
+};
+
+const handleInitialize = (data: {
+  players: UpdatePlayerDataDto[];
+  multiplayerId: string;
+}) => {
+  gameState.localPlayer?.setMultiplayerId(data.multiplayerId);
   for (const playerId in data.players) {
-    if (gameState.localPlayer!.id !== playerId) {
+    if (data.multiplayerId !== playerId) {
       const player = data.players[playerId];
-      const newPlayer = new Player({ id: player.id });
+      const newPlayer = new Player({
+        id: player.id,
+        multiplayerId: player.id,
+      });
+      gameState.addPlayerToLobby(newPlayer);
       newPlayer.addToScene();
     }
   }
-}
+};
 
-export const setupSocketListeners = ({
-  scene,
-  otherPlayers,
-  localPlayer,
-}: SetupSocketListenersDto) => {
+export const setupSocketListeners = ({}: SetupSocketListenersDto) => {
   const socket = io();
-  socket.on(SocketListenerMessages.UpdatePlayer, (playerData: UpdatePlayerDataDto) =>
-    handleUpdatePlayer(playerData, scene, otherPlayers)
-  );
-  socket.on(SocketListenerMessages.RemovePlayer, (data: { id: string }) =>
-    handleRemovePlayer(data, scene, otherPlayers)
-  );
-  socket.on(SocketListenerMessages.CreatePlayer, (data: { id: string }) => {
-    console.log('incoming player', data)
-  });
+  socket.on(SocketListenerMessages.UpdatePlayer, handleUpdatePlayer);
+  socket.on(SocketListenerMessages.RemovePlayer, handleRemovePlayer);
   socket.on(SocketListenerMessages.Initialize, handleInitialize);
-  socket.on(SocketListenerMessages.StateUpdate, (data: { players: UpdatePlayerDataDto[] }) => {
-    console.log('state update', data)
-  });
+  socket.on(SocketListenerMessages.CreatePlayer, handleCreatePlayer);
+  // socket.on(SocketListenerMessages.StateUpdate, () => {});
 
-  console.log('emitting initialize')
-  socket.emit(SocketListenerMessages.Initialize)
+  console.log("emitting initialize");
+  socket.emit(SocketListenerMessages.Initialize);
 
   setInterval(() => {
-    const pos = localPlayer.mesh.position;
-    const velocity = localPlayer.horizontalVelocity;
+    if (!gameState.localPlayer) return;
+
+    const pos = gameState.localPlayer.controls.object.getWorldPosition(
+      new THREE.Vector3()
+    );
+    const velocity = gameState.localPlayer.horizontalVelocity;
 
     const updateDto = {
-      id: localPlayer.id,
+      id: gameState.localPlayer.id,
       position: [pos.x, pos.y, pos.z],
       velocity: [velocity.x, velocity.y, velocity.z],
-      lastUpdateTime: Date.now(),
-    }
+      timestamp: Date.now(),
+    };
+
+    // console.log(updateDto);
 
     emit(socket, SocketListenerMessages.UpdatePlayer, updateDto);
   }, 50);
-
 };
