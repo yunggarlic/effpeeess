@@ -6,6 +6,7 @@ export interface PlayerState {
   id: string;
   position: THREE.Vector3;
   velocity: THREE.Vector3;
+  rotation: THREE.Quaternion;
   materialId: number;
   geometryId: number;
   // You could also include inputs or timestamps to help with lag compensation.
@@ -45,6 +46,7 @@ export class AuthoritativeGameState {
     id: string;
     position: THREE.Vector3;
     velocity: THREE.Vector3;
+    rotation: THREE.Quaternion;
     timestamp: number;
   }) {
     const serverPlayer = this.players[reportedState.id];
@@ -53,6 +55,7 @@ export class AuthoritativeGameState {
     // Update the player's state.
     serverPlayer.position.copy(reportedState.position);
     serverPlayer.velocity.copy(reportedState.velocity);
+    serverPlayer.rotation.copy(reportedState.rotation);
     serverPlayer.lastUpdateTime = reportedState.timestamp;
   }
 }

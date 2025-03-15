@@ -100,6 +100,10 @@ export class Player extends Collidable {
     this.mesh.add(gunMesh);
     return gunMesh;
   }
+  //quaternion rotation
+  updateRotation(x: number, y: number, z: number, w: number): THREE.Quaternion {
+    return this.mesh.quaternion.set(x, y, z, w);
+  }
 
   updatePosition(x: number, y: number, z: number): THREE.Vector3 {
     return this.mesh.position.set(x, y, z);

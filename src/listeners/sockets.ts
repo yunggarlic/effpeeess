@@ -3,7 +3,6 @@ import {
   UpdatePlayerDataDto,
   RemovePlayerDataDto,
   SetupSocketListenersDto,
-  OtherPlayers,
 } from "@types";
 import { SocketListenerMessages } from "@shared";
 import { emit } from "./emit";
@@ -14,6 +13,8 @@ import { gameState } from "@core/state";
 const handleUpdatePlayer = (playerData: UpdatePlayerDataDto) => {
   if (playerData.id === gameState.localPlayer?.id) return;
   const [x, y, z] = playerData.position;
+  console.log("player.rotation", playerData.rotation);
+  const [qx, qy, qz, qw] = playerData.rotation;
   const player = gameState.getPlayerInLobby(playerData.id);
   if (!player) {
     console.error(`Player not found in lobby`);
@@ -22,14 +23,15 @@ const handleUpdatePlayer = (playerData: UpdatePlayerDataDto) => {
     return;
   }
   player.updatePosition(x, y, z);
+  player.updateRotation(qx, qy, qz, qw);
 };
 
 const handleRemovePlayer = (data: RemovePlayerDataDto) => {
-  // if (otherPlayers[data.id]) {
-  //   const { mesh: player } = otherPlayers[data.id];
-  //   scene.remove(player);
-  //   delete otherPlayers[data.id];
-  // }
+  console.log("removing player", data);
+  if (gameState.otherPlayers[data.id]) {
+    gameState.otherPlayers[data.id].destroy();
+    gameState.removePlayerFromLobby(data.id);
+  }
 };
 
 const handleCreatePlayer = (data: { id: string }) => {
@@ -74,15 +76,18 @@ export const setupSocketListeners = ({}: SetupSocketListenersDto) => {
   setInterval(() => {
     if (!gameState.localPlayer) return;
 
-    const pos = gameState.localPlayer.controls.object.getWorldPosition(
-      new THREE.Vector3()
-    );
-    const velocity = gameState.localPlayer.horizontalVelocity;
+    const vec = new THREE.Vector3();
+    const position = gameState.localPlayer.controls.object
+      .getWorldPosition(vec)
+      .toArray();
+    const velocity = gameState.localPlayer.horizontalVelocity.toArray();
+    const rotation = gameState.localPlayer.controls.object.quaternion.toArray();
 
     const updateDto = {
       id: gameState.localPlayer.id,
-      position: [pos.x, pos.y, pos.z],
-      velocity: [velocity.x, velocity.y, velocity.z],
+      position,
+      velocity,
+      rotation,
       timestamp: Date.now(),
     };
 

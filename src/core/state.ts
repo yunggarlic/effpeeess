@@ -35,6 +35,10 @@ export class GameState {
   getPlayerInLobby(multiplayerId: string) {
     return this.otherPlayers[multiplayerId];
   }
+
+  removePlayerFromLobby(multiplayerId: string) {
+    delete this.otherPlayers[multiplayerId];
+  }
 }
 
 export const gameState = new GameState();

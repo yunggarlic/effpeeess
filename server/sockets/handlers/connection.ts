@@ -12,12 +12,14 @@ export const handleConnection = (socket: Socket) => {
   console.log(`Client connected: ${socket.id}`);
 
   // Create a new player with an initial state.
-  const initialPosition = new THREE.Vector3(0, 0, 0);
-  const initialVelocity = new THREE.Vector3(0, 0, 0);
+  const position = new THREE.Vector3(0, 0, 0);
+  const velocity = new THREE.Vector3(0, 0, 0);
+  const rotation = new THREE.Quaternion(0, 0, 0, 1);
   const newPlayer: PlayerState = {
     id: socket.id,
-    position: initialPosition,
-    velocity: initialVelocity,
+    position,
+    velocity,
+    rotation,
     materialId: 0,
     geometryId: 0,
     lastUpdateTime: Date.now(),

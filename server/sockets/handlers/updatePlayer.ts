@@ -1,33 +1,36 @@
 import * as THREE from "three";
 import { Socket } from "socket.io";
 import { gameState } from "../../game-state/authoritativeGameState";
+import { UpdatePlayerDataDto } from "@types";
 
 export const handleUpdatePlayer = (
   socket: Socket,
-  data: { position: number[]; velocity: number[]; timestamp: number }
+  data: UpdatePlayerDataDto
 ) => {
   // Convert the received array data into THREE.Vector3 objects.
   // console.log("received update player", data);
   try {
     validateUpdatePlayerDto(data);
-    const { velocity, position } = data;
+    const { velocity, position, rotation, timestamp } = data;
     const pos = new THREE.Vector3(...position);
     const vel = new THREE.Vector3(...velocity);
+    const rot = new THREE.Quaternion(...rotation);
     const reportedState = {
       id: socket.id,
       position: pos,
       velocity: vel,
-      timestamp: data.timestamp,
+      rotation: rot,
+      timestamp,
     };
 
     // Validate the reported state and update the authoritative game state.
     gameState.validateAndUpdatePlayer(reportedState);
-    console.log("broadcasting update player");
     // Broadcast the update to all other clients.
     socket.broadcast.emit("updatePlayer", {
       id: socket.id,
       position: pos.toArray(),
       velocity: vel.toArray(),
+      rotation: rot.toArray(),
       timestamp: data.timestamp,
     });
   } catch (error) {
