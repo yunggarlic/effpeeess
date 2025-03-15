@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import path from "path";
 
-export default defineConfig({
+export default defineConfig((env) => ({
   resolve: {
     alias: {
       // The alias name must match whatever you put in tsconfig.json
@@ -12,4 +12,8 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "shared"),
     },
   },
-});
+  build: {
+    minify: env.mode === "production" ? "terser" : false,
+    sourcemap: env.mode === "production",
+  },
+}));

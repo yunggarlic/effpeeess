@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "npm run build && ts-node -r module-alias/register server.ts",
+    "start": "npm run build:production && ts-node -r module-alias/register server.ts",
     "dev": "npm run build && nodemon --exec ts-node -r module-alias/register server.ts",
-    "build": "vite build"
+    "build": "vite build --mode development",
+    "build:production": "vite build"
   },
   "keywords": [],
   "author": "",
