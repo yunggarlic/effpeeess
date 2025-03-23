@@ -3,12 +3,19 @@ import {
   UpdatePlayerDataDto,
   RemovePlayerDataDto,
   SetupSocketListenersDto,
+  CreatePlayerDataDto,
+  InitializeDataDto,
+  BulletCreateDataDto,
 } from "@types";
 import { SocketListenerMessages } from "@shared";
 import { emit } from "./emit";
 import { Player } from "@libs/player";
-import { io } from "socket.io-client";
+import { Socket, io } from "socket.io-client";
 import { gameState } from "@core/state";
+import { SocketEvents } from "shared/sockets/SocketEventMap";
+import { InitializePlayerDataDto } from "shared/sockets";
+
+export const socket: Socket<SocketEvents["on"], SocketEvents["emit"]> = io();
 
 const handleUpdatePlayer = (playerData: UpdatePlayerDataDto) => {
   if (playerData.id === gameState.localPlayer?.id) return;
@@ -34,7 +41,7 @@ const handleRemovePlayer = (data: RemovePlayerDataDto) => {
   }
 };
 
-const handleCreatePlayer = (data: { id: string }) => {
+const handleCreatePlayer = (data: CreatePlayerDataDto) => {
   // console.log("incoming player", data);
   const newPlayer = new Player({
     id: data.id,
@@ -44,14 +51,14 @@ const handleCreatePlayer = (data: { id: string }) => {
   newPlayer.addToScene();
 };
 
-const handleInitialize = (data: {
-  players: UpdatePlayerDataDto[];
-  multiplayerId: string;
-}) => {
-  gameState.localPlayer?.setMultiplayerId(data.multiplayerId);
-  for (const playerId in data.players) {
-    if (data.multiplayerId !== playerId) {
-      const player = data.players[playerId];
+const handleInitializePlayer = ({
+  newPlayer,
+  players,
+}: InitializePlayerDataDto) => {
+  gameState.localPlayer?.setMultiplayerId(newPlayer.multiplayerId);
+  for (const playerId in players) {
+    if (newPlayer.multiplayerId !== playerId) {
+      const player = players[playerId];
       const newPlayer = new Player({
         id: player.id,
         multiplayerId: player.id,
@@ -62,17 +69,23 @@ const handleInitialize = (data: {
   }
 };
 
+const handleBulletCreate = (data: BulletCreateDataDto) => {
+  const player = gameState.getPlayerInLobby(data.id);
+  if (player) {
+    player.shoot();
+  }
+};
+const handleBulletHit = (data: BulletCreateDataDto) => {};
+
 export const setupSocketListeners = ({}: SetupSocketListenersDto) => {
-  const socket = io();
+  socket.on(SocketListenerMessages.InitializePlayer, handleInitializePlayer);
+  socket.on(SocketListenerMessages.CreatePlayer, handleCreatePlayer);
   socket.on(SocketListenerMessages.UpdatePlayer, handleUpdatePlayer);
   socket.on(SocketListenerMessages.RemovePlayer, handleRemovePlayer);
-  socket.on(SocketListenerMessages.Initialize, handleInitialize);
-  socket.on(SocketListenerMessages.CreatePlayer, handleCreatePlayer);
-  // socket.on(SocketListenerMessages.StateUpdate, () => {});
+  // socket.on(SocketListenerMessages.BulletCreate, handleBulletCreate);
+  // socket.on(SocketListenerMessages.BulletHit, handleBulletHit);
 
-  console.log("emitting initialize");
   socket.emit(SocketListenerMessages.Initialize);
-
   setInterval(() => {
     if (!gameState.localPlayer) return;
 

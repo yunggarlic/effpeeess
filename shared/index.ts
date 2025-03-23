@@ -1,1 +1,1 @@
-export { default as SocketListenerMessages } from './SocketListenerMessages';
+export { default as SocketListenerMessages } from './sockets/SocketListenerMessages';

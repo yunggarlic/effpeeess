@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Socket } from "socket.io";
-import { gameState } from "../../game-state/authoritativeGameState";
+import { gameState } from "../../game-state/game-state";
 import { UpdatePlayerDataDto } from "@types";
 
 export const handleUpdatePlayer = (

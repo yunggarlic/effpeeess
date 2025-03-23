@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { gameState } from "../../game-state/authoritativeGameState";
+import { gameState } from "../../game-state/game-state";
 import { SocketListenerMessages } from "@shared";
 const handleDisconnect = (socket: Socket) => {
     console.log(`Client disconnected: ${socket.id}`);

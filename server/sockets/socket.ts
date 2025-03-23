@@ -1,6 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server } from "http";
-import { handleConnection } from "./handlers/connection";
+import { handleConnection } from "./handlers/handleConnection";
 
 interface SocketsInitialized {
     io: SocketIOServer;

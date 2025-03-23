@@ -1,6 +1,7 @@
 import * as THREE from "three";
+import { Player } from "server/game-objects/player";
+import { LocalPlayer } from "@libs/player";
 import { OtherPlayers } from "@types";
-import { LocalPlayer, Player } from "@libs/player";
 
 export interface SocketEvents {
   updatePlayer: UpdatePlayerDataDto;
@@ -25,11 +26,18 @@ export interface UpdatePlayerDataDto extends Pick<Player, "id"> {
 }
 export interface RemovePlayerDataDto extends Pick<Player, "id"> {}
 export interface CreatePlayerDataDto extends Pick<Player, "id"> {}
-export interface InitializeDataDto {
+export interface InitializePlayerDataDto {
   players: Player[];
-  multiplayerId: string;
+  newPlayer: Player;
 }
 export interface BulletCreateDataDto {
+  id: string;
+  position: number[];
+  velocity: number[];
+  rotation: number[];
+  timestamp: number;
+}
+export interface BulletHitDataDto {
   id: string;
   position: number[];
   velocity: number[];
